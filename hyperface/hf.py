@@ -491,6 +491,7 @@ class DirectoryIterator(Iterator):
                                                 shuffle, seed)
 
     def get_img(self, index, labels, val=False):
+        # print("get_img")
         grayscale = self.color_mode == 'grayscale'
         l_dict = labels[index]
         fname = l_dict["image"]
@@ -517,6 +518,7 @@ class DirectoryIterator(Iterator):
         # Returns
             The next batch.
         """
+        # print("next")
         with self.lock:
             index_array, current_pos_index, current_pos_batch_size, current_neg_index, current_neg_batch_size = next(
                 self.index_generator)
@@ -538,14 +540,38 @@ class DirectoryIterator(Iterator):
                 if l_dict["labelFnf"] == 0 or np.max(x) == 0:
                     batch_y_fnf.append([0, 1])
                     batch_y_landmarks.append(42 * [0.0])
-                    batch_y_visfac.append(21 * [0.0])
+                    batch_y_landmarks.append((21+42) * [0.0])
+                    # batch_y_visfac.append(21 * [0.0])
                     batch_y_pose.append(3 * [0.0])
                     batch_y_gender.append(2 * [0])
                     batch_image.append(l_dict["image"])
                     batch_bbox.append(l_dict["bbox"])
                 else:
                     batch_y_fnf.append([1, 0])
-                    batch_y_landmarks.append(flatten(l_dict["labelLandmarks"]))
+                    landmarks = np.array(l_dict["labelLandmarks"])
+                    if self.image_data_generator.samplewise_center and self.image_data_generator.samplewise_std_normalization:
+                        box_x, box_y, box_w, box_h = l_dict["bbox"]
+                        # mover a (0,0)
+                        landmarks[:, 0] = landmarks[:, 0] - box_x
+                        landmarks[:, 1] = landmarks[:, 1] - box_y
+                        # escalar
+                        target_w, target_h = self.target_size
+                        scale_x = target_w / box_w
+                        scale_y = target_h / box_h
+                        landmarks[:, 0] = landmarks[:, 0] * scale_x
+                        landmarks[:, 1] = landmarks[:, 1] * scale_y
+                        # aplicar 'normalización' según el paper
+                        x, y = target_w / 2, target_h / 2
+                        landmarks[:, 0] = (landmarks[:, 0] - x) / target_w  # ai = (xi - x)/w
+                        landmarks[:, 1] = (landmarks[:, 1] - y) / target_h  # bi = (yi - y)/h
+
+                    # batch_y_landmarks.append(flatten(l_dict["labelLandmarks"]))
+
+                    # para calcular la pérdida requerimos la visibilidad (según paper)
+                    landmarks = np.append(landmarks.flatten(order='F'), np.array(l_dict["labelVisFac"]))
+                    batch_y_landmarks.append(landmarks.tolist())
+                    # batch_y_landmarks.append(landmarks.flatten(order='F').tolist())
+                    # print(batch_y_landmarks)
                     batch_y_visfac.append(l_dict["labelVisFac"])
                     batch_y_pose.append(l_dict["labelPose"])
                     batch_y_gender.append(l_dict["labelGender"])
@@ -555,7 +581,8 @@ class DirectoryIterator(Iterator):
                 x, l_dict = self.get_img(j, self.neg_labels, val=True)
                 batch_x.append(x)
                 batch_y_fnf.append([0, 1])
-                batch_y_landmarks.append(42 * [0.0])
+                # batch_y_landmarks.append(42 * [0.0])
+                batch_y_landmarks.append((21 + 42) * [0.0])  # visibilidad
                 batch_y_visfac.append(21 * [0.0])
                 batch_y_pose.append(3 * [0.0])
                 batch_y_gender.append(2 * [0])
@@ -567,11 +594,19 @@ class DirectoryIterator(Iterator):
         batch_y_landmarks = np.array(batch_y_landmarks)
         batch_y_visfac = np.array(batch_y_visfac)
         batch_y_pose = np.array(batch_y_pose)
-        batch_y_pose = batch_y_pose / 180.0
+        # batch_y_pose = batch_y_pose / 180.0  # por qué??
         # print(batch_y_pose)
         batch_y_gender = np.array(batch_y_gender)
         batch_image = np.array(batch_image)
         batch_bbox = np.array(batch_bbox)
+
+        # print("center in place")
+        # if self.image_data_generator.samplewise_center:
+        #     batch_y_landmarks -= np.mean(batch_y_landmarks, keepdims=True)
+        # if self.image_data_generator.samplewise_std_normalization:
+        #     batch_y_landmarks /= (np.std(batch_y_landmarks, keepdims=True) + 1e-7)
+
+        # batch_y_landmarks =
 
         # optionally save augmented images to disk for debugging purposes
         # IMPLEMENT LATER
@@ -601,6 +636,8 @@ class DirectoryIterator(Iterator):
         elif self.output_type == 'predict':
             return (batch_x, batch_image, batch_bbox, batch_y_fnf, batch_y_landmarks, batch_y_visfac, batch_y_pose,
                     batch_y_gender)
+
+        # print(batch_y_landmarks.shape)
         return (batch_x, [batch_y_fnf, batch_y_landmarks, batch_y_visfac, batch_y_pose, batch_y_gender])
 
 
@@ -612,6 +649,7 @@ class ImageDataGeneratorV2(object):
         # Returns
             The inputs, normalized.
         """
+        # print("standardize")
         if self.preprocessing_function:
             x = self.preprocessing_function(x)
         if self.rescale:
@@ -658,6 +696,8 @@ class ImageDataGeneratorV2(object):
         # Returns
             A randomly transformed version of the input (same shape).
         """
+        # print("random_transform")
+
         # x is a single image, so it doesn't have image number at index 0
         img_row_axis = self.row_axis - 1
         img_col_axis = self.col_axis - 1
