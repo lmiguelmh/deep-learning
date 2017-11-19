@@ -649,7 +649,8 @@ class DirectoryIterator(Iterator):
         elif self.output_type == 'predict':
             return (batch_x, batch_image, batch_bbox, batch_y_fnf, batch_y_landmarks, batch_y_visfac, batch_y_pose,
                     batch_y_gender)
-
+        elif self.output_type == 'faceposegender':
+            return (batch_x, [batch_y_fnf, batch_y_pose, batch_y_gender])
         # print(batch_y_landmarks.shape)
         return (batch_x, [batch_y_fnf, batch_y_landmarks, batch_y_visfac, batch_y_pose, batch_y_gender])
 
