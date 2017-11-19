@@ -437,6 +437,8 @@ class DirectoryIterator(Iterator):
                  pos_labels_dir,
                  neg_labels_dir,
                  image_data_generator,
+                 pos_max_load_labels=64,
+                 neg_max_load_labels=64,
                  output_type="h",
                  target_size=(224, 224),
                  color_mode='rgb',
@@ -456,8 +458,8 @@ class DirectoryIterator(Iterator):
         self.directory = directory
         pos_labels_file = open(os.path.join(pos_labels_dir), "r")
         neg_labels_file = open(os.path.join(neg_labels_dir), "r")
-        self.pos_labels = json.load(pos_labels_file)
-        self.neg_labels = json.load(neg_labels_file)
+        self.pos_labels = json.load(pos_labels_file)[:pos_max_load_labels]
+        self.neg_labels = json.load(neg_labels_file)[:neg_max_load_labels]
         self.image_data_generator = image_data_generator
         self.target_size = tuple(target_size)
         if color_mode not in {'rgb', 'grayscale'}:
@@ -535,13 +537,18 @@ class DirectoryIterator(Iterator):
         # build batch of image data
         for i, j in enumerate(index_array):
             if i < current_pos_batch_size:
-                x, l_dict = self.get_img(j, self.pos_labels)
+                try:
+                    x, l_dict = self.get_img(j, self.pos_labels)
+                except Exception as e:
+                    # case: /home/lmiguel/Projects/datasets/aflw/aflw/data/flickr/3/image21068.jpg
+                    print("Warning: Couldn't load image", self.pos_labels[j]["image"])
+                    continue
                 batch_x.append(x)
                 if l_dict["labelFnf"] == 0 or np.max(x) == 0:
                     batch_y_fnf.append([0, 1])
-                    batch_y_landmarks.append(42 * [0.0])
+                    # batch_y_landmarks.append(42 * [0.0])
                     batch_y_landmarks.append((21+42) * [0.0])
-                    # batch_y_visfac.append(21 * [0.0])
+                    batch_y_visfac.append(21 * [0.0])
                     batch_y_pose.append(3 * [0.0])
                     batch_y_gender.append(2 * [0])
                     batch_image.append(l_dict["image"])
@@ -578,7 +585,13 @@ class DirectoryIterator(Iterator):
                     batch_image.append(l_dict["image"])
                     batch_bbox.append(l_dict["bbox"])
             else:
-                x, l_dict = self.get_img(j, self.neg_labels, val=True)
+                try:
+                    x, l_dict = self.get_img(j, self.neg_labels, val=True)
+                except Exception as e:
+                    # case: /home/lmiguel/Projects/datasets/aflw/aflw/data/flickr/3/image21068.jpg
+                    print("Warning: Couldn't load image", self.neg_labels[j]["image"])
+                    continue
+
                 batch_x.append(x)
                 batch_y_fnf.append([0, 1])
                 # batch_y_landmarks.append(42 * [0.0])
@@ -912,6 +925,8 @@ class ImageDataGeneratorV2(object):
                             output_type="hyperface",
                             target_size=(224, 224),
                             color_mode='rgb',
+                            pos_max_load_labels=64,
+                            neg_max_load_labels=64,
                             pos_batch_size=14,
                             neg_batch_size=50,
                             shuffle=False,
@@ -925,7 +940,9 @@ class ImageDataGeneratorV2(object):
             pos_labels_dir,
             neg_labels_dir,
             self,
-            output_type,
+            output_type=output_type,
+            pos_max_load_labels=pos_max_load_labels,
+            neg_max_load_labels=neg_max_load_labels,
             target_size=target_size,
             color_mode=color_mode,
             data_format=self.data_format,
