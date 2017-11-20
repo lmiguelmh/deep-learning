@@ -546,8 +546,8 @@ class DirectoryIterator(Iterator):
                 batch_x.append(x)
                 if l_dict["labelFnf"] == 0 or np.max(x) == 0:
                     batch_y_fnf.append([0, 1])
-                    # batch_y_landmarks.append(42 * [0.0])
-                    batch_y_landmarks.append((21+42) * [0.0])
+                    batch_y_landmarks.append(42 * [0.0])
+                    # batch_y_landmarks.append((21+42) * [0.0])
                     batch_y_visfac.append(21 * [0.0])
                     batch_y_pose.append(3 * [0.0])
                     batch_y_gender.append(2 * [0])
@@ -575,9 +575,9 @@ class DirectoryIterator(Iterator):
                     # batch_y_landmarks.append(flatten(l_dict["labelLandmarks"]))
 
                     # para calcular la pérdida requerimos la visibilidad (según paper)
-                    landmarks = np.append(landmarks.flatten(order='F'), np.array(l_dict["labelVisFac"]))
-                    batch_y_landmarks.append(landmarks.tolist())
-                    # batch_y_landmarks.append(landmarks.flatten(order='F').tolist())
+                    # landmarks = np.append(landmarks.flatten(order='F'), np.array(l_dict["labelVisFac"]))
+                    # batch_y_landmarks.append(landmarks.tolist())
+                    batch_y_landmarks.append(landmarks.flatten(order='F').tolist())
                     # print(batch_y_landmarks)
                     batch_y_visfac.append(l_dict["labelVisFac"])
                     batch_y_pose.append(l_dict["labelPose"])
@@ -594,8 +594,8 @@ class DirectoryIterator(Iterator):
 
                 batch_x.append(x)
                 batch_y_fnf.append([0, 1])
-                # batch_y_landmarks.append(42 * [0.0])
-                batch_y_landmarks.append((21 + 42) * [0.0])  # visibilidad
+                batch_y_landmarks.append(42 * [0.0])
+                # batch_y_landmarks.append((21 + 42) * [0.0])  # visibilidad
                 batch_y_visfac.append(21 * [0.0])
                 batch_y_pose.append(3 * [0.0])
                 batch_y_gender.append(2 * [0])
