@@ -550,7 +550,8 @@ class DirectoryIterator(Iterator):
                     # batch_y_landmarks.append((21+42) * [0.0])
                     batch_y_visfac.append(21 * [0.0])
                     batch_y_pose.append(3 * [0.0])
-                    batch_y_gender.append(2 * [0])
+                    # batch_y_gender.append(2 * [0])
+                    batch_y_gender.append([0,0,1])
                     batch_image.append(l_dict["image"])
                     batch_bbox.append(l_dict["bbox"])
                 else:
@@ -581,7 +582,10 @@ class DirectoryIterator(Iterator):
                     # print(batch_y_landmarks)
                     batch_y_visfac.append(l_dict["labelVisFac"])
                     batch_y_pose.append(l_dict["labelPose"])
-                    batch_y_gender.append(l_dict["labelGender"])
+                    # batch_y_gender.append(l_dict["labelGender"])
+                    l = l_dict["labelGender"][:]
+                    l.append(0)
+                    batch_y_gender.append(l)
                     batch_image.append(l_dict["image"])
                     batch_bbox.append(l_dict["bbox"])
             else:
@@ -598,7 +602,8 @@ class DirectoryIterator(Iterator):
                 # batch_y_landmarks.append((21 + 42) * [0.0])  # visibilidad
                 batch_y_visfac.append(21 * [0.0])
                 batch_y_pose.append(3 * [0.0])
-                batch_y_gender.append(2 * [0])
+                # batch_y_gender.append(2 * [0])
+                batch_y_gender.append([0,0,1])
                 batch_image.append(l_dict["image"])
                 batch_bbox.append(l_dict["bbox"])
 
@@ -651,6 +656,9 @@ class DirectoryIterator(Iterator):
                     batch_y_gender)
         elif self.output_type == 'faceposegender':
             return (batch_x, [batch_y_fnf, batch_y_pose, batch_y_gender])
+        elif self.output_type == 'facegender':
+            # print(batch_y_gender)
+            return (batch_x, [batch_y_fnf, batch_y_gender])
         # print(batch_y_landmarks.shape)
         return (batch_x, [batch_y_fnf, batch_y_landmarks, batch_y_visfac, batch_y_pose, batch_y_gender])
 
