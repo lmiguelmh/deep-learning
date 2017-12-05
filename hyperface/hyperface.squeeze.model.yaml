@@ -1076,7 +1076,7 @@ config:
         - *id013
     name: fire9/concat
   - class_name: Dropout
-    config: {name: drop9, noise_shape: null, rate: 0.5, seed: null, trainable: true}
+    config: {name: drop9, rate: 0.5, trainable: true}
     inbound_nodes:
     - - - fire9/concat
         - 0
@@ -1484,7 +1484,7 @@ config:
         config: {l1: 0.0, l2: 0.0}
       name: male_female
       trainable: true
-      units: 2
+      units: 3
       use_bias: true
     inbound_nodes:
     - - - fc_gender
@@ -1499,4 +1499,4 @@ config:
   - [visibility, 0, 0]
   - [roll_pitch_yaw, 0, 0]
   - [male_female, 0, 0]
-keras_version: 2.1.1
+keras_version: 2.0.8
